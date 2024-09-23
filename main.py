@@ -8,6 +8,8 @@ from clorm.clingo import Control
 
 from clorm import ConstantStr, FactBase, Predicate, ph1_
 
+from xclingo import XclingoControl
+
 ASP_PROGRAM = "encoding.lp"
 
 # --------------------------------------------------------------------------
@@ -49,16 +51,26 @@ def main():
     # Add the instance data and ground the ASP program
     ctrl.add_facts(instance)
     ctrl.ground([("base", [])])
+    
 
     # Generate a solution
     solution = None
 
-    def on_model(model):
+    def on_model(model, instance, annotations):
+        xclingo_control = XclingoControl()
         nonlocal solution
         solution = model.facts(atoms=True)
+
+        program = you_get_it_from_facbase(instance)
+        annotations = annotations
+
+        xclingo_control.explain_model(program + annotations, model)
+
         print(solution)
 
-    ctrl.solve(on_model=on_model)
+    ctrl.solve(
+        on_model=lambda model: on_model(model, instance)
+    )
     if not solution:
         raise ValueError("No solution found")
 
